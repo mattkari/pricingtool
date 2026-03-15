@@ -27,7 +27,6 @@ spring:
 
 test:
   env:
-    name: default
     base-url: http://localhost:3000
 
 logging:
@@ -55,7 +54,6 @@ spring:
 
 test:
   env:
-    name: local
     base-url: http://localhost:3000
 
 logging:
@@ -90,7 +88,6 @@ spring:
 
 test:
   env:
-    name: ci
     base-url: https://www.ecohavenboots.co.uk
 
 logging:
@@ -115,7 +112,6 @@ spring:
 
 test:
   env:
-    name: docker
     base-url: https://www.ecohavenboots.co.uk
 
 logging:
