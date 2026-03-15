@@ -1,13 +1,28 @@
 package com.pricingtool.test.config;
 
-import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
-@Data
-@Component
+@Validated
 @ConfigurationProperties(prefix = "test.env")
 public class TestEnvironmentConfig {
-    private String name;
-    private String baseUrl;
+
+    private final String name;
+
+    @NotBlank(message = "test.env.base-url must be set in application.yml")
+    private final String baseUrl;
+
+    public TestEnvironmentConfig(String name, @NotBlank String baseUrl) {
+        this.name = name;
+        this.baseUrl = baseUrl;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
 }
