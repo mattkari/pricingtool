@@ -10,7 +10,12 @@
 # ============================================================
 
 # --- Default profile (H2 in-memory) ---
+# To switch environment, change the active profile below.
+# Options: local, ci, docker (or remove/comment out for H2 default)
+# CLI and env vars override this: mvn test -Dspring.profiles.active=ci
 spring:
+  profiles:
+    active: local
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
@@ -94,29 +99,19 @@ logging:
     org.springframework.jdbc: WARN
 
 ---
-# --- Docker profile (SQL Server via Docker Compose) ---
+# --- Docker profile (H2 in-memory, headless Playwright) ---
 spring:
   config:
     activate:
       on-profile: docker
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=true;trustServerCertificate=true
-    username: sa
-    password: YourStrong@Passw0rd
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
+    url: jdbc:h2:mem:testdb_docker
+    driver-class-name: org.h2.Driver
   jpa:
-    database-platform: org.hibernate.dialect.SQLServerDialect
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
     show-sql: false
-    properties:
-      hibernate:
-        format_sql: false
-        dialect: org.hibernate.dialect.SQLServerDialect
 
 test:
   env:
