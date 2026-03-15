@@ -1,0 +1,66 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: pricingtool-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - pricingtool-network
+    profiles:
+      - sqlserver
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    ipc: host
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - ./target:/app/target
+    environment:
+      - MAVEN_OPTS=-Xmx1024m
+    networks:
+      - pricingtool-network
+
+  test-runner-sqlserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    ipc: host
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - ./target:/app/target
+    environment:
+      - MAVEN_OPTS=-Xmx1024m
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://sqlserver:1433;databaseName=master;encrypt=true;trustServerCertificate=true
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - pricingtool-network
+    profiles:
+      - sqlserver
+
+networks:
+  pricingtool-network:
+    driver: bridge
+
+volumes:
+  sqlserver-data:

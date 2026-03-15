@@ -1,0 +1,129 @@
+# ============================================================
+# PricingTool Test Automation - Consolidated Configuration
+# ============================================================
+# Usage:
+#   Default (H2):    mvn test
+#   Local:           mvn test -Dspring.profiles.active=local
+#   CI:              mvn test -Dspring.profiles.active=ci
+#   Docker:          mvn test -Dspring.profiles.active=docker
+#   Or via env var:  SPRING_PROFILES_ACTIVE=local mvn test
+# ============================================================
+
+# --- Default profile (H2 in-memory) ---
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+test:
+  env:
+    name: default
+    base-url: http://localhost:8080
+
+logging:
+  level:
+    com.pricingtool.test: INFO
+    org.springframework.jdbc: WARN
+
+---
+# --- Local profile (H2 in-memory with debug logging) ---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:h2:mem:testdb_local
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+test:
+  env:
+    name: local
+    base-url: http://localhost:8080
+
+logging:
+  level:
+    com.pricingtool.test: DEBUG
+    org.springframework.jdbc: DEBUG
+
+---
+# --- CI profile (SQL Server in CI environment) ---
+spring:
+  config:
+    activate:
+      on-profile: ci
+  datasource:
+    url: jdbc:sqlserver://ci-sqlserver:1433;databaseName=pricingtool_pricing_ci;encrypt=true;trustServerCertificate=true
+    username: ci_user
+    password: CiTestPassword456!
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      connection-timeout: 20000
+  jpa:
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.SQLServerDialect
+
+test:
+  env:
+    name: ci
+    base-url: http://ci-test-server:8080
+
+logging:
+  level:
+    com.pricingtool.test: INFO
+    org.springframework.jdbc: WARN
+
+---
+# --- Docker profile (SQL Server via Docker Compose) ---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=master;encrypt=true;trustServerCertificate=true
+    username: sa
+    password: YourStrong@Passw0rd
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+  jpa:
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.SQLServerDialect
+
+test:
+  env:
+    name: docker
+    base-url: http://localhost:8080
+
+logging:
+  level:
+    com.pricingtool.test: INFO
+    org.springframework.jdbc: WARN
