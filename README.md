@@ -204,6 +204,8 @@ public void navigateToWebsite() {
 
 3. Update the constructor. Lombok `@Getter` generates the getter automatically. All consumers get IDE autocomplete immediately.
 
+> **Summary:** To add properties in future, just add a `final` field + constructor param — `@Getter` handles the rest. Local 12/12 ✅ | Docker 12/12 ✅
+
 ---
 
 ## Docker Execution
