@@ -1,6 +1,7 @@
 package com.pricingtool.test.steps;
 
 import com.pricingtool.test.config.PlaywrightContext;
+import com.pricingtool.test.config.TestEnvironmentConfig;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
@@ -17,12 +18,12 @@ public class LandingPageSteps {
     @Autowired
     private PlaywrightContext playwrightContext;
 
-    @org.springframework.beans.factory.annotation.Value("${test.env.base-url}")
-    private String baseUrl;
+    @Autowired
+    private TestEnvironmentConfig testEnvConfig;
 
     @Given("the user navigates to the EcoHaven Boots website")
     public void navigateToWebsite() {
-        playwrightContext.getPage().navigate(baseUrl);
+        playwrightContext.getPage().navigate(testEnvConfig.getBaseUrl());
     }
 
     @Then("the user should be on the landing page")

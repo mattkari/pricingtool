@@ -11,3 +11,4 @@ services:
       - ./target:/app/target
     environment:
       - MAVEN_OPTS=-Xmx1024m
+      - SPRING_PROFILES_ACTIVE=docker
