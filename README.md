@@ -146,6 +146,67 @@ spring:
 
 ---
 
+## Configuration Properties
+
+Test environment configuration is managed through a type-safe `@ConfigurationProperties` class rather than scattered `@Value` annotations.
+
+### How It Works
+
+`TestEnvironmentConfig` maps all `test.env.*` properties from `application.yml` into an immutable, validated Java object:
+
+```java
+@Validated
+@ConfigurationProperties(prefix = "test.env")
+public class TestEnvironmentConfig {
+    private final String name;
+
+    @NotBlank
+    private final String baseUrl;
+    // constructor + getters
+}
+```
+
+Inject it in any step definition or service:
+
+```java
+@Autowired
+private TestEnvironmentConfig testEnvConfig;
+
+public void navigateToWebsite() {
+    page.navigate(testEnvConfig.getBaseUrl());  // type-safe, IDE-autocomplete
+}
+```
+
+### Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| `@ConfigurationProperties` over `@Value` | Type-safe, discoverable, single source of truth |
+| `@ConfigurationPropertiesScan` over `@Component` | Proper Spring Boot idiom, supports constructor binding |
+| `final` fields (immutable) | Config is read-only — prevents accidental mutation during tests |
+| `@NotBlank` validation | Fail-fast at startup if a required property is missing |
+| No Lombok | Avoids an extra dependency for 2 simple getters |
+
+### Adding New Config Properties
+
+1. Add the property to `application.yml` under `test.env`:
+   ```yaml
+   test:
+     env:
+       name: local
+       base-url: http://localhost:3000
+       timeout: 30000              # ← new property
+   ```
+
+2. Add the field to `TestEnvironmentConfig`:
+   ```java
+   private final int timeout;
+   ```
+
+3. Update the constructor and add a getter. All consumers get IDE autocomplete immediately.
+
+---
+
 ## Docker Execution
 
 The framework uses [Playwright's official Java Docker image](https://mcr.microsoft.com/en-us/artifact/mar/playwright/java) (`mcr.microsoft.com/playwright/java:v1.58.0-noble`) with recommended settings:
@@ -332,7 +393,8 @@ pricingtool/
 │       │   ├── PricingToolTestApplication.java       # Test bootstrap
 │       │   ├── config/
 │       │   │   ├── CucumberSpringConfig.java    # Cucumber ↔ Spring bridge
-│       │   │   └── PlaywrightContext.java       # Scenario-scoped Playwright bean
+│       │   │   ├── PlaywrightContext.java       # Scenario-scoped Playwright bean
+│       │   │   └── TestEnvironmentConfig.java   # Type-safe config properties
 │       │   ├── context/
 │       │   │   └── ScenarioContext.java          # Scenario-scoped state
 │       │   ├── data/
