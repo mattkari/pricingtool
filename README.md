@@ -155,14 +155,14 @@ Test environment configuration is managed through a type-safe `@ConfigurationPro
 `TestEnvironmentConfig` maps all `test.env.*` properties from `application.yml` into an immutable, validated Java object:
 
 ```java
+@Getter
 @Validated
 @ConfigurationProperties(prefix = "test.env")
 public class TestEnvironmentConfig {
-    private final String name;
 
     @NotBlank
     private final String baseUrl;
-    // constructor + getters
+    // constructor binding — immutable, Lombok generates getters
 }
 ```
 
@@ -185,7 +185,7 @@ public void navigateToWebsite() {
 | `@ConfigurationPropertiesScan` over `@Component` | Proper Spring Boot idiom, supports constructor binding |
 | `final` fields (immutable) | Config is read-only — prevents accidental mutation during tests |
 | `@NotBlank` validation | Fail-fast at startup if a required property is missing |
-| No Lombok | Avoids an extra dependency for 2 simple getters |
+| Lombok `@Getter` (not `@Data`) | Clean auto-generated getters without setters — keeps config immutable and scales as properties grow |
 
 ### Adding New Config Properties
 
@@ -193,7 +193,6 @@ public void navigateToWebsite() {
    ```yaml
    test:
      env:
-       name: local
        base-url: http://localhost:3000
        timeout: 30000              # ← new property
    ```
@@ -203,7 +202,7 @@ public void navigateToWebsite() {
    private final int timeout;
    ```
 
-3. Update the constructor and add a getter. All consumers get IDE autocomplete immediately.
+3. Update the constructor. Lombok `@Getter` generates the getter automatically. All consumers get IDE autocomplete immediately.
 
 ---
 
