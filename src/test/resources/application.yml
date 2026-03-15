@@ -28,7 +28,7 @@ spring:
 test:
   env:
     name: default
-    base-url: http://localhost:8080
+    base-url: http://localhost:3000
 
 logging:
   level:
@@ -56,7 +56,7 @@ spring:
 test:
   env:
     name: local
-    base-url: http://localhost:8080
+    base-url: http://localhost:3000
 
 logging:
   level:
@@ -91,7 +91,7 @@ spring:
 test:
   env:
     name: ci
-    base-url: http://ci-test-server:8080
+    base-url: https://www.ecohavenboots.co.uk
 
 logging:
   level:
@@ -116,7 +116,7 @@ spring:
 test:
   env:
     name: docker
-    base-url: http://localhost:8080
+    base-url: https://www.ecohavenboots.co.uk
 
 logging:
   level:

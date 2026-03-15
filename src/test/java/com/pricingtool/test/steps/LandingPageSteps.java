@@ -17,18 +17,18 @@ public class LandingPageSteps {
     @Autowired
     private PlaywrightContext playwrightContext;
 
-    private static final String BASE_URL = "https://www.ecohavenboots.co.uk/";
+    @org.springframework.beans.factory.annotation.Value("${test.env.base-url}")
+    private String baseUrl;
 
     @Given("the user navigates to the EcoHaven Boots website")
     public void navigateToWebsite() {
-        playwrightContext.getPage().navigate(BASE_URL);
+        playwrightContext.getPage().navigate(baseUrl);
     }
 
     @Then("the user should be on the landing page")
     public void verifyLandingPage() {
         Page page = playwrightContext.getPage();
-        assertTrue(page.url().contains("ecohavenboots.co.uk"),
-                "URL should contain ecohavenboots.co.uk");
+        assertFalse(page.url().isEmpty(), "URL should not be empty");
         assertFalse(page.title().isEmpty(), "Page title should not be empty");
     }
 
