@@ -15,15 +15,11 @@ mvn clean test
 
 ### Docker Execution
 ```bash
-# Run tests in Docker with H2 (default)
+# Run tests in Docker with H2
 ./run-docker-tests.sh
-
-# Run tests in Docker with SQL Server
-./run-docker-tests.sh --with-sqlserver
 
 # Or manually
 docker compose up --build test-runner --abort-on-container-exit
-docker compose --profile sqlserver up --build test-runner-sqlserver --abort-on-container-exit
 ```
 
 ## Docker Configuration
@@ -177,7 +173,6 @@ spring.jpa.hibernate.ddl-auto=create-drop
 ### Docker Configuration
 ```yaml
 services:
-  # Default: H2 in-memory tests with Playwright
   test-runner:
     build: .
     init: true              # Proper process handling
@@ -186,15 +181,6 @@ services:
       - SYS_ADMIN          # Browser sandbox support
     volumes:
       - ./target:/app/target
-
-  # Optional: SQL Server + Playwright tests
-  test-runner-sqlserver:
-    build: .
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
 ```
 
 ## Build Commands
@@ -205,13 +191,9 @@ mvn compile
 mvn test
 mvn clean install
 
-# Docker execution (H2)
+# Docker execution
 docker compose up --build test-runner --abort-on-container-exit
 docker compose down
-
-# Docker execution (SQL Server)
-docker compose --profile sqlserver up --build test-runner-sqlserver --abort-on-container-exit
-docker compose --profile sqlserver down -v
 ```
 
 ## Test Results
@@ -229,7 +211,7 @@ Use Docker for consistent test execution across environments:
 
 ```bash
 # In your CI pipeline
-docker-compose up --build --abort-on-container-exit
+docker compose up --build test-runner --abort-on-container-exit
 ```
 
 The test reports will be available in `./target/cucumber-reports/` after execution.

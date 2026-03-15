@@ -39,9 +39,9 @@ All test configuration lives in a single file: `src/test/resources/application.y
 | Profile | Database | Use Case |
 |---------|----------|----------|
 | *(default)* | H2 in-memory | Local development, quick feedback |
-| `local` | SQL Server on `localhost:1433` | Local with real database |
-| `ci` | SQL Server on `ci-sqlserver:1433` | CI/CD pipelines |
-| `docker` | SQL Server on `localhost:1433` | Docker Compose execution (auto-starts container) |
+| `local` | H2 in-memory (debug logging) | Local development with verbose SQL output |
+| `ci` | SQL Server on `ci-sqlserver:1433` | CI/CD pipelines with real database |
+| `docker` | H2 in-memory | Docker Compose execution (headless Playwright) |
 
 ### How to Switch Profiles
 
@@ -51,13 +51,13 @@ All test configuration lives in a single file: `src/test/resources/application.y
 # Run with default profile (H2)
 mvn clean test
 
-# Run with local SQL Server
+# Run with local profile (H2 + debug logging)
 mvn clean test -Dspring.profiles.active=local
 
-# Run with CI profile
+# Run with CI profile (SQL Server)
 mvn clean test -Dspring.profiles.active=ci
 
-# Run with Docker profile (auto-starts SQL Server container)
+# Run with Docker profile (H2, headless Playwright)
 mvn clean test -Dspring.profiles.active=docker
 ```
 
@@ -71,13 +71,25 @@ SPRING_PROFILES_ACTIVE=local mvn clean test
 $env:SPRING_PROFILES_ACTIVE="local"; mvn clean test
 ```
 
-**Option 3 — Shell script:**
+**Option 3 — Edit `application.yml` directly:**
+
+Set `spring.profiles.active` in `src/test/resources/application.yml`:
+
+```yaml
+spring:
+  profiles:
+    active: local    # Options: local, ci, docker (or remove for default H2)
+```
+
+CLI arguments and environment variables always override this setting.
+
+**Option 4 — Shell script:**
 
 ```bash
 ./run-tests.sh              # default (H2)
-./run-tests.sh local        # local SQL Server
-./run-tests.sh ci           # CI environment
-./run-tests.sh docker       # Docker networking
+./run-tests.sh local        # local (H2 + debug logging)
+./run-tests.sh ci           # CI environment (SQL Server)
+./run-tests.sh docker       # Docker (H2 headless)
 ```
 
 ### Profile Configuration Overview
@@ -94,19 +106,20 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
 ```
 
-**Local:**
+**Local (H2 + debug logging):**
 ```yaml
 spring:
   config:
     activate:
       on-profile: local
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=pricingtool_pricing_local;...
-    username: sa
-    password: LocalDevPassword123!
+    url: jdbc:h2:mem:testdb_local
+    driver-class-name: org.h2.Driver
+  jpa:
+    show-sql: true
 ```
 
-**CI:**
+**CI (SQL Server):**
 ```yaml
 spring:
   config:
@@ -118,17 +131,16 @@ spring:
     password: CiTestPassword456!
 ```
 
-**Docker:**
+**Docker (H2 headless):**
 ```yaml
 spring:
   config:
     activate:
       on-profile: docker
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=master;...
+    url: jdbc:h2:mem:testdb_docker
+    driver-class-name: org.h2.Driver
 ```
-
-> **Note:** The docker profile connects to `localhost:1433` so it works when running `mvn test` on the host (port is exposed by docker-compose). When tests run *inside* Docker (via `test-runner-sqlserver`), the `SPRING_DATASOURCE_URL` environment variable overrides this to use the internal `sqlserver` hostname.
 
 > **Tip:** To add a new environment, add a new `---` section to `application.yml` with `spring.config.activate.on-profile: <name>` and only the settings that differ.
 
@@ -142,52 +154,17 @@ The framework uses [Playwright's official Java Docker image](https://mcr.microso
 - `ipc: host` — Chromium shared memory management
 - `cap_add: SYS_ADMIN` — browser sandbox support
 
-### Run Tests with Docker SQL Server (from host)
+Docker execution always uses **H2 in-memory database** — no external database containers are needed.
 
-The simplest way to run tests against a real SQL Server:
-
-```bash
-mvn clean test -Dspring.profiles.active=docker
-```
-
-This automatically:
-1. Starts the SQL Server Docker container (via a Maven profile using `exec-maven-plugin`)
-2. Waits for the database health check to pass (up to ~2.5 minutes)
-3. Runs tests against `localhost:1433`
-
-> **Note:** The SQL Server container stays running after tests for fast re-runs. To clean up:
-> ```bash
-> docker compose --profile sqlserver down      # stop containers
-> docker compose --profile sqlserver down -v   # stop + remove data volumes
-> ```
-
-### Run Tests Fully Inside Docker
-
-To run both the test runner and SQL Server inside Docker containers:
-
-**With H2 (default — no dependencies):**
+### Run Tests in Docker
 
 ```bash
+# Using the script
 ./run-docker-tests.sh
 
-# Or manually:
+# Or manually
 docker compose up --build test-runner --abort-on-container-exit
 ```
-
-**With SQL Server:**
-
-```bash
-./run-docker-tests.sh --with-sqlserver
-
-# Or manually:
-docker compose --profile sqlserver up --build test-runner-sqlserver --abort-on-container-exit
-```
-
-The `--with-sqlserver` flag automatically:
-1. Starts a SQL Server 2022 container
-2. Waits for health check to pass
-3. Runs tests with `SPRING_PROFILES_ACTIVE=docker`
-4. Cleans up containers after completion
 
 ### DockerRunner (Programmatic Docker Execution)
 
@@ -217,19 +194,13 @@ docker compose logs -f test-runner
 
 # Clean up
 docker compose down
-
-# Clean up including SQL Server data volumes
-docker compose --profile sqlserver down -v
 ```
 
 ### Docker Architecture
 
 ```
 docker-compose.yml
-├── test-runner              # Playwright image, H2 database (always available)
-├── test-runner-sqlserver    # Playwright image, SQL Server (--profile sqlserver)
-└── sqlserver                # SQL Server 2022 (--profile sqlserver)
-    └── healthcheck waits for DB readiness before tests start
+└── test-runner    # Playwright image, H2 database, headless Chromium
 ```
 
 ---
@@ -343,11 +314,11 @@ BUILD SUCCESS
 ```
 pricingtool/
 ├── Dockerfile                                   # Playwright Java image for test execution
-├── docker-compose.yml                           # Test runner + SQL Server orchestration
+├── docker-compose.yml                           # Test runner orchestration (H2 + Playwright)
 ├── mvnw / mvnw.cmd                              # Maven wrapper (no local Maven needed)
 ├── pom.xml                                      # Dependencies and build config
 ├── run-tests.sh                                 # Local test runner (accepts profile arg)
-├── run-docker-tests.sh                          # Docker test runner (--with-sqlserver flag)
+├── run-docker-tests.sh                          # Docker test runner
 ├── src/
 │   ├── main/
 │   │   ├── java/com/pricingtool/
@@ -401,8 +372,8 @@ pricingtool/
 | Cucumber | 7.16.1 |
 | JUnit | 5 (Jupiter) |
 | Playwright | 1.58.0 (Maven dependency + Docker image) |
-| H2 Database | In-memory (default test profile) |
-| SQL Server | 2022 (local/ci/docker profiles) |
+| H2 Database | In-memory (default/local/docker profiles) |
+| SQL Server | 2022 (ci profile only) |
 | MSSQL JDBC | 12.6.1 |
 | Maven | 3.6+ (wrapper included) |
 
@@ -500,14 +471,11 @@ When running via Docker, reports are volume-mounted to `./target/` on the host.
 ## CI/CD Integration
 
 ```bash
-# In your CI pipeline — runs tests in Docker with no host dependencies
+# In your CI pipeline — runs tests in Docker with H2 (no host dependencies)
 docker compose up --build test-runner --abort-on-container-exit
 echo $?  # exit code 0 = all tests passed
 
-# With SQL Server
-docker compose --profile sqlserver up --build test-runner-sqlserver --abort-on-container-exit
-
-# Or set the profile via environment variable in your CI config
+# Or set the CI profile for SQL Server-backed tests in your pipeline
 SPRING_PROFILES_ACTIVE=ci mvn clean test
 ```
 
@@ -533,21 +501,8 @@ mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="in
 ```
 > This is not needed when running via Docker — the Playwright image includes all browsers.
 
-**`mvn test -Dspring.profiles.active=docker` hangs or times out:**
-The Maven docker profile waits up to ~2.5 minutes for SQL Server to be ready. If it fails, check Docker is running and inspect the container logs:
+**Docker tests fail:**
+Check Docker is running and inspect the container logs:
 ```bash
-docker compose --profile sqlserver logs sqlserver
-```
-
-**SQL Server container not starting:**
-```bash
-docker compose --profile sqlserver up sqlserver -d
-docker compose --profile sqlserver logs sqlserver
-```
-
-**Port 1433 already in use:**
-```bash
-# Check what's using the port
-lsof -i :1433
-# Or change the host port in docker-compose.yml: "1434:1433"
+docker compose logs test-runner
 ```
