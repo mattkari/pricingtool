@@ -30,6 +30,11 @@ That's it. Tests run out of the box with zero setup.
 
 ---
 
+
+## Guides
+
+- [Playwright Java: Real API Traffic Guide](docs/playwright-java-real-api-traffic-guide.md): sync UI actions with real API calls (`waitForResponse`), record all traffic with a `NetworkRecorder`, wire it into Cucumber + PicoContainer, and 10 common API + UI test patterns.
+
 ## Profile Management
 
 All test configuration lives in a single file: `src/test/resources/application.yml`. Profiles let you switch environments without changing any code or config — just pass the profile name.
